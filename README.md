@@ -1,6 +1,10 @@
 # Prostate RNA-seq Collaborator Dashboard
 
-Live dashboard for Nigerian vs Portuguese prostate cancer RNA-seq results (Paper-2), backed by **Supabase** and hosted on **Netlify**.
+**Live:** https://nigerian-pca-dashboard.netlify.app
+
+Collaborator dashboard for Nigerian vs Portuguese prostate cancer RNA-seq results (Paper-2), backed by **Supabase** and hosted on **Netlify**.
+
+Auth redirect URLs and email magic links are configured for this Netlify URL (see `supabase/config.toml`).
 
 ## Stack
 
