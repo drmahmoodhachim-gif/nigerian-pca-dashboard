@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
+import { getAuthRedirectUrl } from "../lib/authRedirect";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
 
 type Props = {
@@ -11,6 +12,7 @@ export default function AuthGate({ children }: Props) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
+  const [finishingLogin, setFinishingLogin] = useState(false);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -18,9 +20,31 @@ export default function AuthGate({ children }: Props) {
       return;
     }
 
+    async function finishAuthFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+      const hash = window.location.hash;
+
+      if (code || hash.includes("access_token")) {
+        setFinishingLogin(true);
+      }
+
+      // PKCE magic link: ?code=...
+      if (code) {
+        const { error: err } = await supabase.auth.exchangeCodeForSession(code);
+        if (err) setError(err.message);
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setFinishingLogin(false);
+        return;
+      }
+    }
+
+    finishAuthFromUrl();
+
     supabase.auth.getSession().then(({ data, error: err }) => {
       if (err) setError(err.message);
       setSession(!!data.session);
+      setFinishingLogin(false);
     });
 
     const {
@@ -30,6 +54,7 @@ export default function AuthGate({ children }: Props) {
       if (event === "SIGNED_IN") {
         setMessage("");
         setError("");
+        setFinishingLogin(false);
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     });
@@ -43,17 +68,22 @@ export default function AuthGate({ children }: Props) {
     setError("");
     setMessage("");
 
-    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    const redirectTo = getAuthRedirectUrl();
     const { error: err } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: redirectTo },
+      options: {
+        emailRedirectTo: redirectTo,
+        shouldCreateUser: true,
+      },
     });
 
     setSending(false);
     if (err) {
       setError(err.message);
     } else {
-      setMessage("Check your email for the sign-in link.");
+      setMessage(
+        `Check your email for the sign-in link. It will open ${redirectTo} — request a new link if an older email sent you to localhost.`
+      );
     }
   }
 
@@ -72,8 +102,12 @@ export default function AuthGate({ children }: Props) {
     );
   }
 
-  if (session === null) {
-    return <p className="loading">Loading…</p>;
+  if (session === null || finishingLogin) {
+    return (
+      <p className="loading">
+        {finishingLogin ? "Completing sign-in…" : "Loading…"}
+      </p>
+    );
   }
 
   if (!session) {
@@ -84,6 +118,10 @@ export default function AuthGate({ children }: Props) {
           <p>
             Nigerian vs Portuguese prostate cancer RNA-seq dashboard. Use the email
             address your PI invited in Supabase Authentication.
+          </p>
+          <p className="hint">
+            Always request the link from{" "}
+            <strong>https://nigerian-pca-dashboard.netlify.app</strong> (not localhost).
           </p>
           <form onSubmit={sendMagicLink}>
             <input
