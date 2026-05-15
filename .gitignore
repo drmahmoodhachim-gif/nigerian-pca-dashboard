@@ -3,3 +3,21 @@ dist
 .env
 .env.local
 *.local
+scripts/sql-batches/_*
+scripts/sql-batches/*.json
+scripts/sql-batches/*.jsonl
+scripts/sql-batches/*.py
+scripts/sql-batches/*.cjs
+scripts/sql-batches/*.txt
+scripts/sql-batches/fgsea_*
+scripts/sql-batches/mcp_*
+scripts/sql-batches/pc_*
+scripts/sql-batches/build_*
+scripts/sql-batches/merge_*
+scripts/sql-batches/prep_*
+scripts/sql-batches/push_*
+scripts/sql-batches/regenerate_*
+scripts/sql-batches/_split_*
+
+# Local Netlify folder
+.netlify

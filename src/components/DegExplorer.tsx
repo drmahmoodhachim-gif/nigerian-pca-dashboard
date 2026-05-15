@@ -18,13 +18,18 @@ export default function DegExplorer() {
   const [rows, setRows] = useState<DegRow[]>([]);
   const [geneFilter, setGeneFilter] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState("");
 
   useEffect(() => {
     supabase
       .from("pc_comparisons")
       .select("*")
       .order("sort_order")
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          setFetchError(error.message);
+          return;
+        }
         if (data?.length) {
           setComparisons(data);
           setSlug(data[0].slug);
@@ -35,14 +40,16 @@ export default function DegExplorer() {
   useEffect(() => {
     if (!slug) return;
     setLoading(true);
+    setFetchError("");
     supabase
       .from("pc_deg")
       .select("*")
       .eq("comparison_slug", slug)
       .order("padj", { ascending: true })
       .limit(5000)
-      .then(({ data }) => {
-        setRows(data ?? []);
+      .then(({ data, error }) => {
+        if (error) setFetchError(error.message);
+        else setRows(data ?? []);
         setLoading(false);
       });
   }, [slug]);
@@ -92,6 +99,8 @@ export default function DegExplorer() {
           />
         </label>
       </div>
+
+      {fetchError && <p className="message error">{fetchError}</p>}
 
       {loading ? (
         <p className="loading">Loading DEGs…</p>

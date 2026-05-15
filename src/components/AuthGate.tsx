@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { isSupabaseConfigured, supabase } from "../lib/supabase";
 
 type Props = {
   children: React.ReactNode;
@@ -13,14 +13,25 @@ export default function AuthGate({ children }: Props) {
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    if (!isSupabaseConfigured) {
+      setSession(false);
+      return;
+    }
+
+    supabase.auth.getSession().then(({ data, error: err }) => {
+      if (err) setError(err.message);
       setSession(!!data.session);
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, s) => {
+    } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(!!s);
+      if (event === "SIGNED_IN") {
+        setMessage("");
+        setError("");
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -32,7 +43,7 @@ export default function AuthGate({ children }: Props) {
     setError("");
     setMessage("");
 
-    const redirectTo = window.location.origin;
+    const redirectTo = `${window.location.origin}${window.location.pathname}`;
     const { error: err } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: { emailRedirectTo: redirectTo },
@@ -46,6 +57,21 @@ export default function AuthGate({ children }: Props) {
     }
   }
 
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="auth-screen">
+        <div className="auth-card">
+          <h1>Configuration required</h1>
+          <p className="error">
+            Supabase environment variables are missing in this deployment. Set{" "}
+            <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code>{" "}
+            in Netlify → Site settings → Environment variables, then redeploy.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (session === null) {
     return <p className="loading">Loading…</p>;
   }
@@ -56,8 +82,8 @@ export default function AuthGate({ children }: Props) {
         <div className="auth-card">
           <h1>Collaborator access</h1>
           <p>
-            Nigerian vs Portuguese prostate cancer RNA-seq dashboard. Sign in
-            with the email your PI invited in Supabase.
+            Nigerian vs Portuguese prostate cancer RNA-seq dashboard. Use the email
+            address your PI invited in Supabase Authentication.
           </p>
           <form onSubmit={sendMagicLink}>
             <input

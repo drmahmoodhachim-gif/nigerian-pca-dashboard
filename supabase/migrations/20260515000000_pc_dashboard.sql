@@ -1,0 +1,2 @@
+-- Collaborator dashboard tables (see README for RLS policies)
+-- Applied via Supabase MCP; kept here for version control.
