@@ -1,0 +1,11 @@
+{
+  "site_id": "078c71c8-250e-44a7-912c-748a91a2aafc",
+  "repo": {
+    "provider": "github",
+    "repo": "drmahmoodhachim-gif/nigerian-pca-dashboard",
+    "branch": "master",
+    "cmd": "npm run build",
+    "dir": "",
+    "public_repo": true
+  }
+}
